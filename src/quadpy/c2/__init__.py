@@ -26,6 +26,7 @@ from . import (
     _wissmann_becker,
     _witherden_vincent,
 )
+from ._adaptive import integrate_adaptive
 from ._helpers import get_good_scheme, schemes
 from ._product import product
 
@@ -60,4 +61,6 @@ __all__ = [
     "rectangle_points",
     "schemes",
     "get_good_scheme",
+    #
+    "integrate_adaptive",
 ]

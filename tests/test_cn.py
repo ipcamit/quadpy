@@ -47,13 +47,19 @@ def test_scheme(scheme):
 
     n = scheme.dim
     cn_limits = [[-1.0, 1.0]] * n
-    cn = quadpy.cn.ncube_points(*cn_limits)
 
     evaluator = orthopy.cn.Eval(scheme.points)
 
     k = 0
     while True:
-        approximate = scheme.integrate(lambda x: next(evaluator), cn)
+        # cn = quadpy.cn.ncube_points(*cn_limits)
+        # approximate = scheme.integrate(lambda x: next(evaluator), cn)
+
+        approximate = scheme.integrate_minmax(lambda x: next(evaluator), *cn_limits)
+
+        # print(approximate)
+        # exit(1)
+
         exact = evaluator.int_p0 * 2 ** n if k == 0 else 0.0
         err = np.abs(approximate - exact)
         if np.any(err > scheme.test_tolerance * 1.1):

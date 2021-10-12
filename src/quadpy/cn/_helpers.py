@@ -2,9 +2,18 @@ import itertools
 from typing import Callable
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from .._exception import QuadpyError
 from ..helpers import QuadratureScheme, n_outer
+
+
+def _check_shape(x: np.ndarray, fx: np.ndarray) -> None:
+    if fx.shape[-len(x.shape[1:]) :] != x.shape[1:]:
+        string = ", ".join(str(val) for val in x.shape[1:])
+        raise QuadpyError(
+            f"Wrong return value shape {fx.shape}. Expected (..., {string})."
+        )
 
 
 class CnScheme(QuadratureScheme):
@@ -24,7 +33,7 @@ class CnScheme(QuadratureScheme):
         assert points.shape[0] == dim, f"points.shape == {points.shape}, dim = {dim}"
         super().__init__(name, weights, points, degree, source, tol, comments)
 
-    def integrate(self, f: Callable, ncube, dot=np.dot):
+    def integrate(self, f: Callable, ncube: ArrayLike, dot: Callable = np.dot):
         ncube = np.asarray(ncube)
         if (
             ncube.shape[: self.dim] != tuple(self.dim * [2])
@@ -37,17 +46,32 @@ class CnScheme(QuadratureScheme):
                 f"got ({string})."
             )
         x = transform(self.points, ncube).T
-        detJ = get_detJ(self.points, ncube)
 
         fx = np.asarray(f(x))
-        if fx.shape[-len(x.shape[1:]) :] != x.shape[1:]:
-            string = ", ".join(str(val) for val in x.shape[1:])
-            raise QuadpyError(
-                f"Wrong return value shape {fx.shape}. Expected (..., {string})."
-            )
+        _check_shape(x, fx)
 
-        ref_vol = 2 ** np.prod(self.dim)
-        return ref_vol * dot(fx * abs(detJ), self.weights)
+        detJ = get_detJ(self.points, ncube)
+        ref_vol = 2 ** self.dim
+        return ref_vol * dot(fx * np.abs(detJ), self.weights)
+
+    def integrate_minmax(
+        self, f: Callable, *minmax: tuple[float, float], dot: Callable = np.dot
+    ):
+        # For rectilinear domains, the transformation can happen in each dimension
+        # separately.
+        a, b = np.array([*minmax]).T
+        x = 0.5 * ((1 - self.points.T) * a + (1 + self.points.T) * b).T
+
+        fx = np.asarray(f(x))
+        _check_shape(x, fx)
+
+        # for rectilinear domains, detJ is equal for all points and can just be
+        # expressed by a single float
+        # ref_vol = 2 ** self.dim
+        # absDetJ = np.prod([vmax - vmin for vmin, vmax in minmax]) / ref_vol
+        ref_vol_absDetJ = np.abs(np.prod([vmax - vmin for vmin, vmax in minmax]))
+
+        return ref_vol_absDetJ * dot(fx, self.weights)
 
     def points_inside(self):
         """Are all points strictly inside the domain?"""
@@ -112,7 +136,7 @@ def get_detJ(xi, cube):
         a0 = n_outer(a)
         J.append(np.tensordot(a0, cube, axes=(range(d), range(d))).T)
 
-    # `det` needs the square at the end. Fortran...
+    # `det` needs the square at the _end_. Fortran...
     # For d==2 or d==3, we could avoid this copy and compute the determinant
     # with their elementary formulas, i.e.,
     #
@@ -122,6 +146,7 @@ def get_detJ(xi, cube):
     #     - J0[2]*J1[1]*J2[0] - J1[2]*J2[1]*J0[0] - J2[2]*J0[1]*J1[0].
     #
     J = np.array(J)
+
     J = np.moveaxis(J, (0, 1), (-2, -1))
     out = np.linalg.det(J)
     return out
