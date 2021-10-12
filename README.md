@@ -356,24 +356,24 @@ import numpy as np
 import quadpy
 
 scheme = quadpy.c2.get_good_scheme(7)
+
+val = scheme.integrate_box(lambda x: np.exp(x[0]), (0.0, 1.0), (0.0, 1.0))
+```
+This is if the integration limits in _x_ and _y_ can be given separately.
+
+If you're dealing with a general quadrilateral, the points are specified in an array of
+shape (2, 2, ...) such that `arr[0][0]` is the lower left corner, `arr[1][1]` the upper
+right.
+
+<!--pytest-codeblocks:skip-->
+
+```python
 val = scheme.integrate(
     lambda x: np.exp(x[0]),
     [[[0.0, 0.0], [1.0, 0.0]], [[0.0, 1.0], [1.0, 1.0]]],
 )
 ```
 
-The points are specified in an array of shape (2, 2, ...) such that `arr[0][0]`
-is the lower left corner, `arr[1][1]` the upper right. If your c2
-has its sides aligned with the coordinate axes, you can use the convenience
-function
-
-<!--pytest-codeblocks:skip-->
-
-```python
-quadpy.c2.rectangle_points([x0, x1], [y0, y1])
-```
-
-to generate the array.
 
 ### 2D space with weight function exp(-r) (_E<sub>2</sub><sup>r</sup>_)
 
@@ -540,10 +540,7 @@ import quadpy
 
 scheme = quadpy.c3.product(quadpy.c1.newton_cotes_closed(3))
 # scheme.show()
-val = scheme.integrate(
-    lambda x: np.exp(x[0]),
-    quadpy.c3.cube_points([0.0, 1.0], [-0.3, 0.4], [1.0, 2.1]),
-)
+val = scheme.integrate_box(lambda x: np.exp(x[0]), (0.0, 1.0), (-0.3, 0.4), (1.0, 2.1))
 ```
 
 ### Pyramid (_P<sub>3</sub>_)
@@ -731,11 +728,9 @@ Example:
 import numpy as np
 import quadpy
 
-dim = 4
-scheme = quadpy.cn.stroud_cn_3_3(dim)
-val = scheme.integrate(
-    lambda x: np.exp(x[0]),
-    quadpy.cn.ncube_points([0.0, 1.0], [0.1, 0.9], [-1.0, 1.0], [-1.0, -0.5]),
+scheme = quadpy.cn.stroud_cn_3_3(n=4)
+val = scheme.integrate_box(
+    lambda x: np.exp(x[0]), (0.0, 1.0), (0.1, 0.9), (-1.0, 1.0), (-1.0, -0.5)
 )
 ```
 

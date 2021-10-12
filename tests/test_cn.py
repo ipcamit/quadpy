@@ -55,7 +55,7 @@ def test_scheme(scheme):
         # cn = quadpy.cn.ncube_points(*cn_limits)
         # approximate = scheme.integrate(lambda x: next(evaluator), cn)
 
-        approximate = scheme.integrate_minmax(lambda x: next(evaluator), *cn_limits)
+        approximate = scheme.integrate_box(lambda x: next(evaluator), *cn_limits)
 
         # print(approximate)
         # exit(1)

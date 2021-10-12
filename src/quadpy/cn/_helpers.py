@@ -54,7 +54,7 @@ class CnScheme(QuadratureScheme):
         ref_vol = 2 ** self.dim
         return ref_vol * dot(fx * np.abs(detJ), self.weights)
 
-    def integrate_minmax(
+    def integrate_box(
         self, f: Callable, *minmax: tuple[float, float], dot: Callable = np.dot
     ):
         # For rectilinear domains, the transformation can happen in each dimension
